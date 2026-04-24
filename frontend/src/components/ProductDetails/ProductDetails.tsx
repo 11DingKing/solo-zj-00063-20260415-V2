@@ -19,7 +19,6 @@ import {
   IReview,
   IRatingStats,
   IGetReviewsResponse,
-  UserRole,
 } from "@typings/state/index";
 import { createCart } from "@api/cart";
 import {
@@ -28,7 +27,6 @@ import {
   checkUserReview,
   deleteReview,
   markReviewUseful,
-  getProductDetail,
   replyToReview,
 } from "@api/review";
 import "@styles/ProductDetails.css";
@@ -236,7 +234,10 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
       setUserReview(response.data.review);
       loadReviews();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || "Failed to submit review";
+      const errorMsg =
+        error.response && error.response.data && error.response.data.error
+          ? error.response.data.error
+          : "Failed to submit review";
       showSnackbar(errorMsg, "error");
     } finally {
       setSubmitting(false);
@@ -320,7 +321,10 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
         ),
       );
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || "Failed to submit reply";
+      const errorMsg =
+        error.response && error.response.data && error.response.data.error
+          ? error.response.data.error
+          : "Failed to submit reply";
       showSnackbar(errorMsg, "error");
     } finally {
       setSubmittingReply(false);
@@ -579,7 +583,10 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
           ) : (
             reviews.map((review) => {
               const reviewUser = review.userId as any;
-              const username = reviewUser?.username || "Anonymous";
+              const username =
+                reviewUser && reviewUser.username
+                  ? reviewUser.username
+                  : "Anonymous";
               const isOwnReview =
                 loggedUser && userReview && userReview.id === review.id;
 
