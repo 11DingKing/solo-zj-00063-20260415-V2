@@ -4,6 +4,7 @@ import {
   ISubmitReviewResponse,
   IGetReviewsResponse,
   ICheckReviewResponse,
+  IReplyToReviewResponse,
 } from "@typings/state/review";
 
 const PREFIX = "/reviews";
@@ -49,6 +50,13 @@ export const markReviewUseful = (
   reviewId: string,
 ): Promise<{ data: { usefulCount: number } }> => {
   return http.put(`${PREFIX}/${reviewId}/useful`);
+};
+
+export const replyToReview = (
+  reviewId: string,
+  reply: string,
+): Promise<{ data: IReplyToReviewResponse }> => {
+  return http.put(`${PREFIX}/${reviewId}/reply`, { reply });
 };
 
 export const getProductDetail = (productId: string) => {

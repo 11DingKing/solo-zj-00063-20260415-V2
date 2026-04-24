@@ -12,12 +12,14 @@ import AddShoppingCart from "material-ui/svg-icons/action/add-shopping-cart";
 import KeyboardArrowLeft from "material-ui/svg-icons/hardware/keyboard-arrow-left";
 import Delete from "material-ui/svg-icons/action/delete";
 import ThumbUp from "material-ui/svg-icons/action/thumb-up";
+import Chat from "material-ui/svg-icons/communication/chat";
 import {
   IUser,
   ICatalogProduct,
   IReview,
   IRatingStats,
   IGetReviewsResponse,
+  UserRole,
 } from "@typings/state/index";
 import { createCart } from "@api/cart";
 import {
@@ -27,6 +29,7 @@ import {
   deleteReview,
   markReviewUseful,
   getProductDetail,
+  replyToReview,
 } from "@api/review";
 import "@styles/ProductDetails.css";
 
@@ -104,6 +107,15 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [reviewToReply, setReviewToReply] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
+
+  const isMerchantOrAdmin =
+    loggedUser &&
+    (loggedUser.role === "merchant" || loggedUser.role === "admin");
 
   const { info } = product;
 
@@ -271,6 +283,48 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
   const confirmDeleteReview = (reviewId: string) => {
     setReviewToDelete(reviewId);
     setDeleteDialogOpen(true);
+  };
+
+  const openReplyDialog = (reviewId: string) => {
+    setReviewToReply(reviewId);
+    setReplyContent("");
+    setReplyDialogOpen(true);
+  };
+
+  const handleSubmitReply = async () => {
+    if (!reviewToReply || !replyContent.trim()) {
+      showSnackbar("Please enter reply content", "error");
+      return;
+    }
+
+    if (replyContent.length > 500) {
+      showSnackbar("Reply content too long (max 500 characters)", "error");
+      return;
+    }
+
+    setSubmittingReply(true);
+    try {
+      const response = await replyToReview(reviewToReply, replyContent.trim());
+      showSnackbar("Reply submitted successfully", "success");
+      setReplyDialogOpen(false);
+      setReplyContent("");
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewToReply
+            ? {
+                ...review,
+                merchantReply: response.data.review.merchantReply,
+                merchantReplyAt: response.data.review.merchantReplyAt,
+              }
+            : review,
+        ),
+      );
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || "Failed to submit reply";
+      showSnackbar(errorMsg, "error");
+    } finally {
+      setSubmittingReply(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -556,6 +610,14 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
                       icon={<ThumbUp />}
                       onClick={() => handleMarkUseful(review.id)}
                     />
+                    {isMerchantOrAdmin && !review.merchantReply && (
+                      <FlatButton
+                        label="Reply"
+                        icon={<Chat />}
+                        onClick={() => openReplyDialog(review.id)}
+                        primary={true}
+                      />
+                    )}
                   </div>
 
                   {review.merchantReply && (
@@ -617,6 +679,39 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
       >
         Are you sure you want to delete this review? This action cannot be
         undone.
+      </Dialog>
+
+      <Dialog
+        title="Reply to Review"
+        actions={[
+          <FlatButton
+            label="Cancel"
+            primary={true}
+            onClick={() => setReplyDialogOpen(false)}
+          />,
+          <RaisedButton
+            label="Submit Reply"
+            primary={true}
+            onClick={handleSubmitReply}
+            disabled={submittingReply || !replyContent.trim()}
+          />,
+        ]}
+        modal={true}
+        open={replyDialogOpen}
+      >
+        <TextField
+          hintText="Enter your reply to this review..."
+          floatingLabelText="Reply Content"
+          multiLine
+          rows={4}
+          fullWidth
+          value={replyContent}
+          onChange={({ target }: any) => setReplyContent(target.value)}
+          disabled={submittingReply}
+        />
+        <div style={{ marginTop: "10px", fontSize: "12px", color: "#999" }}>
+          {replyContent.length}/500 characters
+        </div>
       </Dialog>
 
       <Snackbar

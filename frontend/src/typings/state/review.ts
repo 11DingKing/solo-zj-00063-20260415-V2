@@ -62,3 +62,13 @@ export interface ISubmitReviewResponse {
   pending: boolean;
   message: string;
 }
+
+export interface IReplyToReviewParams {
+  reviewId: string;
+  reply: string;
+}
+
+export interface IReplyToReviewResponse {
+  message: string;
+  review: IReview;
+}

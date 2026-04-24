@@ -241,4 +241,66 @@ router.put("/:reviewId/useful", checkToken, async (req, res) => {
   }
 });
 
+router.put("/:reviewId/reply", checkToken, jsonParser, async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { reply } = req.body;
+    const user = req.user;
+
+    if (!reply || !reply.trim()) {
+      return res.status(400).json({ error: "Reply content is required" });
+    }
+
+    if (reply.length > 500) {
+      return res
+        .status(400)
+        .json({ error: "Reply content too long (max 500 characters)" });
+    }
+
+    if (user.role !== "merchant" && user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Only merchants or admins can reply to reviews" });
+    }
+
+    const review = await Review.findOne({
+      _id: reviewId,
+      isDeleted: false,
+    });
+
+    if (!review) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    if (review.merchantReply) {
+      return res
+        .status(400)
+        .json({ error: "This review has already been replied to" });
+    }
+
+    if (containsSensitiveWords(reply)) {
+      return res
+        .status(400)
+        .json({ error: "Reply contains inappropriate content" });
+    }
+
+    review.merchantReply = reply.trim();
+    review.merchantReplyAt = new Date();
+    await review.save();
+
+    const populatedReview = await Review.findById(review.id).populate(
+      "userId",
+      "username email",
+    );
+
+    res.json({
+      message: "Reply submitted successfully",
+      review: populatedReview,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 module.exports = router;
