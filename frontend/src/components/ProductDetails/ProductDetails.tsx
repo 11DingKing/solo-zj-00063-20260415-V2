@@ -233,10 +233,11 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
       setHasReviewed(true);
       setUserReview(response.data.review);
       loadReviews();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       const errorMsg =
-        error.response && error.response.data && error.response.data.error
-          ? error.response.data.error
+        err.response && err.response.data && err.response.data.error
+          ? err.response.data.error
           : "Failed to submit review";
       showSnackbar(errorMsg, "error");
     } finally {
@@ -320,10 +321,11 @@ const ProductDetails = ({ loggedUser, product }: Props) => {
             : review,
         ),
       );
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as any;
       const errorMsg =
-        error.response && error.response.data && error.response.data.error
-          ? error.response.data.error
+        err.response && err.response.data && err.response.data.error
+          ? err.response.data.error
           : "Failed to submit reply";
       showSnackbar(errorMsg, "error");
     } finally {
