@@ -1,10 +1,14 @@
-FROM node:14-alpine as build
+FROM node:18-alpine as build
 
 WORKDIR /usr/local/share/frontend
 
-COPY package*.json ./
+RUN npm config set registry https://registry.npmmirror.com
+
 RUN apk --update add libtool automake autoconf nasm gcc make g++ zlib-dev
-RUN npm install
+
+COPY package*.json ./
+RUN npm ci
+
 COPY . .
 RUN npm run build
 
